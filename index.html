@@ -536,14 +536,25 @@ window.addEventListener("pointerup",()=>{if(!drag)return;drag=false;mq.classList
 mq.addEventListener("click",e=>{if(moved>5){e.stopPropagation();e.preventDefault();moved=0}},true);
 draw();lock();
 addEventListener("resize",draw);
-(async()=>{try{db=await claude.use("db")}catch(e){}
-if(!db)return;
-try{const us=await claude.use("user");uid=us?await us.id():""}catch(e){}
-try{db.collection("reviews").orderBy("d","desc").limit(500).onSnapshot(q=>{rows=q.docs.map(x=>x.data()).filter(x=>x&&x.t&&x.s>=1&&x.s<=5).map(x=>({n:String(x.n||"").slice(0,24),s:x.s|0,t:String(x.t).slice(0,120),d:x.d||0,u:String(x.u||"")}));draw();lock()},()=>{})}catch(e){}})();
+// ====== SUPABASE : remplacez ces 2 valeurs (Project Settings → API) ======
+const SB_URL="https://qdrghkyqqhrnalzoqyuu.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkcmdoa3lxcWhybmFsem9xeXV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQxODcyMTMsImV4cCI6MjEwOTc2MzIxM30.RdEC7TB3sSNp3B5_Afa5WHmhj5pHdYOX1ae6PBQhfPc";
+// ========================================================================
+const sbOn=!SB_URL.includes("VOTRE-PROJET")&&!SB_KEY.includes("VOTRE_CLE");
+const sbH={apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,"Content-Type":"application/json"};
+try{uid=localStorage.getItem("yb_uid")||"";if(!uid){uid=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(36).slice(2));localStorage.setItem("yb_uid",uid)}}catch(e){}
+async function loadAvis(){if(!sbOn)return;
+try{const r=await fetch(SB_URL+"/rest/v1/avis?select=nom,note,commentaire,created_at,uid&order=created_at.desc&limit=500",{headers:sbH});
+if(!r.ok)throw new Error(r.status);const j=await r.json();
+rows=j.filter(x=>x&&x.commentaire&&x.note>=1&&x.note<=5).map(x=>({n:String(x.nom||"").slice(0,24),s:x.note|0,t:String(x.commentaire).slice(0,120),d:Date.parse(x.created_at)||0,u:String(x.uid||"")}));draw();lock()}
+catch(err){console.error("Supabase (lecture) :",err)}}
+loadAvis();setInterval(loadAvis,60000);
 $("avf").onsubmit=async e=>{e.preventDefault();const t=$("avt").value.trim();if(sentN()>=MAX){lock();return}if(!note){msg.textContent="Choisissez une note de 1 à 5 étoiles.";return}if(!t)return;
 const r={n:$("avn").value.trim().slice(0,24),s:note,t:t.slice(0,120),d:Date.now(),u:uid};
 const btn=e.target.querySelector("button.bs");btn.disabled=true;
-try{if(db){await db.collection("reviews").add(r)}else{loc.unshift(r);try{localStorage.setItem("yb_avis3",JSON.stringify(loc))}catch(e){}draw()}try{localStorage.setItem("yb_n",String(sentN()+1))}catch(e){}msg.textContent="Merci pour votre avis !";$("avt").value="";$("avn").value="";note=0;[...stEl.children].forEach(x=>x.classList.remove("on"))}catch(err){msg.textContent="Impossible d’envoyer l’avis pour le moment."}
+try{if(sbOn){const res=await fetch(SB_URL+"/rest/v1/avis",{method:"POST",headers:{...sbH,Prefer:"return=minimal"},body:JSON.stringify({nom:r.n||null,note:r.s,commentaire:r.t,uid:uid||null})});
+if(!res.ok){console.error("Supabase (envoi) :",res.status,await res.text());throw new Error(res.status)}
+rows.unshift({...r});draw();loadAvis()}else{loc.unshift(r);try{localStorage.setItem("yb_avis3",JSON.stringify(loc))}catch(e){}draw()}try{localStorage.setItem("yb_n",String(sentN()+1))}catch(e){}msg.textContent="Merci pour votre avis !";$("avt").value="";$("avn").value="";note=0;[...stEl.children].forEach(x=>x.classList.remove("on"))}catch(err){msg.textContent="Impossible d’envoyer l’avis pour le moment."}
 setTimeout(()=>{btn.disabled=false;lock()},3000)};
 })();
 </script>
