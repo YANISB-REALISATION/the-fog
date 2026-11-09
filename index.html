@@ -480,10 +480,10 @@ const SEED=[/* {n:"Prénom",s:5,t:"Texte de l’avis"} — ajoutez ici de vrais 
 const $=id=>document.getElementById(id),tk=$("avtk"),mq=$("avmq"),em=$("avem"),msg=$("avm"),dt=$("avdt");
 const reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
 let note=0,rows=[],db=null,loc=[],open=null,hold=false,pos=0,W=0,loop=false,ht,drag=false,sx=0,sl=0,moved=0;
-let uid="";const MAX=2;
-const sentN=()=>{let n=0;try{n=+localStorage.getItem("yb_n")||0}catch(e){}return Math.max(n,uid?rows.filter(r=>r.u===uid).length:0)};
-const lock=()=>{const full=sentN()>=MAX;$("avf").querySelectorAll("textarea,input,button").forEach(x=>x.disabled=full);if(full)msg.textContent="Merci ! Vous avez atteint la limite de 2 avis."};
-try{loc=JSON.parse(localStorage.getItem("yb_avis3")||"[]").filter(x=>x&&x.t&&x.s>=1&&x.s<=5).slice(0,20)}catch(e){}
+let uid="";
+const rated=()=>{let v=false;try{v=localStorage.getItem("yb_rated")==="1"}catch(e){}return v||!!(uid&&rows.some(r=>r.u===uid&&r.s>0))};
+const lock=()=>{const ro=rated();stEl.hidden=ro;if(ro)note=0};
+try{loc=JSON.parse(localStorage.getItem("yb_avis3")||"[]").filter(x=>x&&x.t&&x.s>=0&&x.s<=5).slice(0,20)}catch(e){}
 const stEl=$("avst");
 const QP=["Bravo pour ton travail, continue comme ça !","Axeddim-ik yelha aṭas, kemmel akka !","Un travail magnifique, bonne continuation !","Très beau rendu, tu mérites le succès !","Axeddim-ik yeɛǧeb-iyi aṭas !","Superbe qualité, j’adore tes images !","Du vrai talent, hâte de voir la suite !","Ṣaḥḥa ! Kemmel akka !","Professionnel et créatif, je recommande !","Allah ybarek, continue comme ça !","Quel talent, continue à nous régaler !","Tanemmirt ɣef axeddim-ik !","Bravo khoya, que du talent !","Chaque image raconte une histoire, bravo !","Tes clips sont incroyables, bravo !","Ad k-yeɛawen Ṛebbi, kemmel akka !","Un vrai artiste, beaucoup de respect !","Courage et bonne continuation pour la suite !","Des images qui donnent des frissons !","Merci pour ton professionnalisme !","Tu as un œil incroyable, félicitations !","Que du bonheur à regarder, continue !","Dieu te garde, belle continuation !","Bon courage pour tes projets !"];
 for(let k=0;k<3;k++)for(const q of QP){const c=document.createElement("button");c.type="button";c.className="qc";c.textContent=q;if(k){c.setAttribute("aria-hidden","true");c.tabIndex=-1}c.onclick=()=>{$("avt").value=q};$("avqp").appendChild(c)}
@@ -506,15 +506,15 @@ window.addEventListener("pointerup",()=>{if(!drag)return;drag=false;qp.classList
 qp.addEventListener("click",e=>{if(moved>5){e.stopPropagation();e.preventDefault();moved=0}},true);
 })();
 for(let i=1;i<=5;i++){const b=document.createElement("button");b.type="button";b.textContent="★";b.setAttribute("role","radio");b.setAttribute("aria-label",i+" sur 5");b.onclick=()=>{note=i;[...stEl.children].forEach((x,k)=>x.classList.toggle("on",k<i))};stEl.appendChild(b)}
-const stars=s=>"★".repeat(s)+"☆".repeat(5-s),key=r=>(r.d||"")+"|"+r.t;
+const stars=s=>s?"★".repeat(s)+"☆".repeat(5-s):"",key=r=>(r.d||"")+"|"+r.t;
 function preview(t){const w=t.trim().split(/\s+/);return w.slice(0,3).join(" ")+(w.length>3?"…":"")}
 function show(r,btn){if(open===key(r)){closeDt();return}open=key(r);dt.children[1].textContent=stars(r.s);dt.children[2].textContent=r.t;dt.children[3].textContent="— "+(r.n||"Anonyme");dt.hidden=false;tk.querySelectorAll(".av").forEach(x=>x.classList.toggle("on",x===btn))}
 function closeDt(){open=null;dt.hidden=true;tk.querySelectorAll(".av.on").forEach(x=>x.classList.remove("on"))}
 dt.querySelector(".x").onclick=closeDt;
-function card(r){const d=document.createElement("button");d.type="button";d.className="av";d.setAttribute("aria-label","Lire l’avis complet");const s=document.createElement("b");s.textContent=stars(r.s);const t=document.createElement("span");t.textContent=preview(r.t);const n=document.createElement("strong");n.textContent=r.n||"Anonyme";d.append(s,t,n);d.onclick=()=>show(r,d);return d}
+function card(r){const d=document.createElement("button");d.type="button";d.className="av";d.setAttribute("aria-label","Lire l’avis complet");const s=document.createElement("b");s.textContent=stars(r.s);s.hidden=!r.s;const t=document.createElement("span");t.textContent=preview(r.t);const n=document.createElement("strong");n.textContent=r.n||"Anonyme";d.append(s,t,n);d.onclick=()=>show(r,d);return d}
 function draw(){const all=[...loc,...rows,...SEED];tk.textContent="";tk.className="tk";loop=false;em.hidden=all.length>0;mq.hidden=!all.length;const ag=$("avavg");ag.hidden=!all.length;
 if(!all.length){closeDt();return}
-const m=all.reduce((a,r)=>a+r.s,0)/all.length;ag.textContent="★ "+m.toFixed(1).replace(".",",")+" / 5";const sm=document.createElement("small");sm.textContent=all.length+" avis";ag.appendChild(sm);
+const rt=all.filter(r=>r.s>0);ag.textContent=rt.length?"★ "+(rt.reduce((a,r)=>a+r.s,0)/rt.length).toFixed(1).replace(".",",")+" / 5":"";const sm=document.createElement("small");sm.textContent=all.length+" avis";ag.appendChild(sm);
 all.forEach(r=>tk.appendChild(card(r)));
 requestAnimationFrame(()=>{if(tk.scrollWidth<=mq.clientWidth){tk.classList.add("ct");mq.scrollLeft=0;return}
 for(let k=0;k<2;k++)all.forEach(r=>tk.appendChild(card(r)));
@@ -546,16 +546,16 @@ try{uid=localStorage.getItem("yb_uid")||"";if(!uid){uid=(crypto.randomUUID?crypt
 async function loadAvis(){if(!sbOn)return;
 try{const r=await fetch(SB_URL+"/rest/v1/avis?select=nom,note,commentaire,created_at,uid&order=created_at.desc&limit=500",{headers:sbH});
 if(!r.ok)throw new Error(r.status);const j=await r.json();
-rows=j.filter(x=>x&&x.commentaire&&x.note>=1&&x.note<=5).map(x=>({n:String(x.nom||"").slice(0,24),s:x.note|0,t:String(x.commentaire).slice(0,120),d:Date.parse(x.created_at)||0,u:String(x.uid||"")}));draw();lock()}
+rows=j.filter(x=>x&&x.commentaire&&(x.note==null||(x.note>=1&&x.note<=5))).map(x=>({n:String(x.nom||"").slice(0,24),s:x.note|0,t:String(x.commentaire).slice(0,120),d:Date.parse(x.created_at)||0,u:String(x.uid||"")}));draw();lock()}
 catch(err){console.error("Supabase (lecture) :",err)}}
 loadAvis();setInterval(loadAvis,60000);
-$("avf").onsubmit=async e=>{e.preventDefault();const t=$("avt").value.trim();if(sentN()>=MAX){lock();return}if(!note){msg.textContent="Choisissez une note de 1 à 5 étoiles.";return}if(!t)return;
-const r={n:$("avn").value.trim().slice(0,24),s:note,t:t.slice(0,120),d:Date.now(),u:uid};
+$("avf").onsubmit=async e=>{e.preventDefault();const t=$("avt").value.trim();if(!t)return;
+const r={n:$("avn").value.trim().slice(0,24),s:rated()?0:note,t:t.slice(0,120),d:Date.now(),u:uid};
 const btn=e.target.querySelector("button.bs");btn.disabled=true;
-try{if(sbOn){const res=await fetch(SB_URL+"/rest/v1/avis",{method:"POST",headers:{...sbH,Prefer:"return=minimal"},body:JSON.stringify({nom:r.n||null,note:r.s,commentaire:r.t,uid:uid||null})});
+try{if(sbOn){const res=await fetch(SB_URL+"/rest/v1/avis",{method:"POST",headers:{...sbH,Prefer:"return=minimal"},body:JSON.stringify({nom:r.n||null,note:r.s||null,commentaire:r.t,uid:uid||null})});
 if(!res.ok){console.error("Supabase (envoi) :",res.status,await res.text());throw new Error(res.status)}
-rows.unshift({...r});draw();loadAvis()}else{loc.unshift(r);try{localStorage.setItem("yb_avis3",JSON.stringify(loc))}catch(e){}draw()}try{localStorage.setItem("yb_n",String(sentN()+1))}catch(e){}msg.textContent="Merci pour votre avis !";$("avt").value="";$("avn").value="";note=0;[...stEl.children].forEach(x=>x.classList.remove("on"))}catch(err){msg.textContent="Impossible d’envoyer l’avis pour le moment."}
-setTimeout(()=>{btn.disabled=false;lock()},3000)};
+rows.unshift({...r});draw();loadAvis()}else{loc.unshift(r);try{localStorage.setItem("yb_avis3",JSON.stringify(loc))}catch(e){}draw()}if(r.s){try{localStorage.setItem("yb_rated","1")}catch(e){}}msg.textContent="Merci pour votre avis !";$("avt").value="";$("avn").value="";note=0;[...stEl.children].forEach(x=>x.classList.remove("on"))}catch(err){msg.textContent="Impossible d’envoyer l’avis pour le moment."}
+setTimeout(()=>{btn.disabled=false;lock()},1000)};
 })();
 </script>
 </section>
