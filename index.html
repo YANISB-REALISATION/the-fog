@@ -761,9 +761,9 @@ $$(".rv").forEach(e=>io.observe(e));
  let acc=0;for(let i=0;i<N;i++){at.push(acc);acc+=dt;if(i==N-1||par[i+1]!==par[i])acc+=PAUSE}
  const pen=document.createElement("i");pen.className="pen";pen.setAttribute("aria-hidden","true");
  pen.innerHTML='<svg viewBox="0 0 60 60" width="60" height="60"><defs><linearGradient id="pg" x1="0" x2="1"><stop offset="0" stop-color="#3a3a3a"/><stop offset=".45" stop-color="#151515"/><stop offset="1" stop-color="#000"/></linearGradient><linearGradient id="pn" x1="0" x2="1"><stop offset="0" stop-color="#f1e3b0"/><stop offset="1" stop-color="#b9a77a"/></linearGradient></defs><g transform="translate(6,56) rotate(38)"><path d="M0 0L-3.4-13H3.4Z" fill="url(#pn)"/><path d="M0 -1.5V-9" stroke="#6b5a34" stroke-width=".7"/><circle cx="0" cy="-9.6" r="1" fill="#6b5a34"/><rect x="-4.3" y="-24" width="8.6" height="11" rx="1.2" fill="#1b1b1b"/><rect x="-4.5" y="-25.6" width="9" height="2" fill="url(#pn)"/><rect x="-5.3" y="-52" width="10.6" height="26.4" rx="2.2" fill="url(#pg)"/><rect x="-5.4" y="-34" width="10.8" height="1.6" fill="url(#pn)"/><rect x="3.4" y="-50" width="1.5" height="12" rx=".7" fill="#ffffff22"/><rect x="5.3" y="-50" width="1.4" height="17" rx=".7" fill="url(#pn)"/></g></svg>';
- host.append(pen);
+ const phone=matchMedia("(pointer:coarse),(max-width:700px)").matches;if(!phone)host.append(pen);
  let started=false,t0=0,next=0,px=0,py=0,last=0,done=false,fin=false,TX=[],TY=[],lw=0;
- function measure(){if(fin)return;const hr=host.getBoundingClientRect();lw=innerWidth;TX=new Array(N);TY=new Array(N);
+ function measure(){if(fin||phone)return;const hr=host.getBoundingClientRect();lw=innerWidth;TX=new Array(N);TY=new Array(N);
   for(let i=0;i<N;i++){const c=chars[i].getBoundingClientRect();TX[i]=c.right-hr.left+1;TY[i]=c.bottom-hr.top-3}}
  let mt;const remeasure=()=>{clearTimeout(mt);mt=setTimeout(()=>{if(innerWidth!==lw||!TX.length)measure()},200)};
  addEventListener("resize",remeasure,{passive:true});addEventListener("orientationchange",remeasure,{passive:true});
@@ -772,10 +772,12 @@ $$(".rv").forEach(e=>io.observe(e));
  function finish(){if(fin)return;fin=true;removeEventListener("resize",remeasure);while(next<N)reveal(next++);pen.classList.remove("show");setTimeout(()=>pen.remove(),600)}
  function tick(now){if(fin)return;const el=now-t0,dtf=Math.min(.05,Math.max(.001,(now-last)/1000));last=now;
   while(next<N&&at[next]<=el)reveal(next++);
+  if(!phone){
   const ci=Math.max(0,next-1),tx=TX[ci],ty=TY[ci];
   if(!px&&!py){px=tx;py=ty}const k=1-Math.exp(-dtf*26);px+=(tx-px)*k;py+=(ty-py)*k;
   const w=Math.sin(el*.017)*2.6,b=Math.sin(el*.031)*1.1;
   pen.style.transform="translate3d("+(px-6).toFixed(1)+"px,"+(py-56+b).toFixed(1)+"px,0) rotate("+w.toFixed(2)+"deg)";
+  }
   if(next>=N&&el>at[N-1]+500){pen.classList.remove("show");setTimeout(()=>pen.remove(),600);fin=true;return}
   requestAnimationFrame(tick)}
  function start(){if(started)return;started=true;measure();pen.classList.add("show");t0=performance.now();last=t0;requestAnimationFrame(tick)}
